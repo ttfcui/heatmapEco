@@ -1,0 +1,21 @@
+Package: heatmapEco
+Type: Package
+Title: Heatmap Plotter Suited for Economic Data
+Version: 0.25
+Date: 2016-02-21
+Authors@R: person("Tom", "Cui", email = "Tom.Cui@Chicagobooth.edu", role=c("aut", "cre"))
+Depends:
+    R (>= 3.0.0)
+Description: Provides convenience functions for generating heatmaps suitable
+   for visualizing economic data. Provides an appealing colour palette, easy entry of policy change lines, outlier visualization and quantile binning of a continuous variable. Built on dplyr, ggplot2 (H. Wickham), zoo (A. Zeileis) and statar (M. Gomez).
+Imports:
+    dplyr,
+    ggplot2,
+    zoo
+Suggests:
+    data.table,
+    lfe,
+    testthat
+License: GPL-3
+LazyData: TRUE
+RoxygenNote: 5.0.1
