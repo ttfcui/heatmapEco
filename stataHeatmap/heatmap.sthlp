@@ -115,8 +115,8 @@ will not execute successfully without adding directories to PATH.
 directory {it:does} change with each updated version of R.
 
 {pstd} Install the R packages by calling heatmapSetup.R from the command line,
-with one argument: the full path to {bf:heatmapEco}'s source file, which ends
-in ".tar.gz".
+with one argument: the full directory to where {bf:heatmapEco}'s source file,
+which ends in ".tar.gz"., was downloaded.
 To test the installation works, try running the example given in this manual.
 
 

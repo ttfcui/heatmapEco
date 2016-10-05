@@ -17,14 +17,14 @@ a more robust program than Stata's own heatmap program.
 
 ## Installation
 
-1) Of the R package
+*1) Of the R package*
 
 Pull the repo to get the source package, heatmapEco_xxx.tar.gz. Install it from source in R, or run heatmapSetup.R from the repo to automate
 installation. To run heatmapSetup.R, make sure to input the directory to which the repo was downloaded as the command line argument.
 
 Upload to CRAN is coming eventually.
 
-2) Of the Stata package
+*2) Of the Stata package*
 
 Run *sysdir* in Stata. Copy the ADO and STHLP files in subdirectory stataHeatmap to one of the folders listed by that command
 (the "PERSONAL" or "PLUS" folder is advised). Reboot Stata; the command should be loaded afterwards.

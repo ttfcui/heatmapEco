@@ -87,7 +87,10 @@ program define heatmap
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
     !"`Rscript_call'" heatmap_link.R --args "`outdir'heatmap_args.csv"
-    if "`keepagg'" != "" exit
+    if "`keepagg'" != "" {
+        restore
+        exit
+   }
     erase "`outdir'heatmap_args.csv"
     erase `fname'
 
