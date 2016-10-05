@@ -1,4 +1,4 @@
-* heatmap v. 0.3, updated 08/09/2016
+* heatmap v. 0.3, updated 10/04/2016
 * CONTACT: Tom Cui (Tom.Cui@chicagobooth.edu)
 
 * TODO: Does this function convert times or not?
@@ -8,7 +8,7 @@ program define heatmap
     syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], id(varname) ///
         save(string asis) [Nquantiles(integer 10) tsort(string) TPERiod(string) ///
         CONTROLs(varlist numeric ts fv) Absorb(varname) GRPFunc(string) noAddmean ///
-        probs(numlist) polbreak(string asis) splitx(string) splity(string) ///
+        probs(numlist) POLBReak(string asis) XLABel(string) YLABel(string) ///
         customf(numlist) count OUTliers ISFactor ZTItle(string) KEEPagg]
 
     version 12.1
@@ -21,7 +21,7 @@ program define heatmap
         }
         local cutlast = `cut'
     }
-    if !inlist("`tperiod'", "", "year", "NULL", "yearmon", "quarter") {
+    if !inlist("`tperiod'", "", "year", "yearmon", "quarter") {
         di as error "Time interval type not implemented."
         exit
     }
@@ -66,7 +66,6 @@ program define heatmap
     heatmap_aggregate `yvar' `xvar' `ivar' [`weight' `exp'] `if', id(`id') ///
         nquantiles(`nquantiles') tsort(`tsort') probs(`probs') grpfunc(`grpfunc') `isfactor'
     * Rename columns, convert time to string
-    drop if missing(quantile)
     rename (`yvar' `ivar') (z index)
     time_conv, tperiod(`tperiod')
 
@@ -82,9 +81,10 @@ program define heatmap
     if "`keepagg'" == "" | _rc != 0 export delimited `fname', replace
 
     gen_args `outdir'heatmap_args, fname(`fname') save(`save') tperiod(`tperiod') ///
-        `count' `outliers' `isfactor' splitx(`splitx') splity(`splity') ztitle(`ztitle') ///
+        `count' `outliers' `isfactor' xlabel(`xlabel') ylabel(`ylabel') ztitle(`ztitle') ///
         polbreak(`polbreak') customf(`customf')
-    gen_link // Generate the heatmap_link script if file does not exist
+    capture confirm file heatmap_link.R
+    if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
     !"`Rscript_call'" heatmap_link.R --args "`outdir'heatmap_args.csv"
     if "`keepagg'" != "" exit
@@ -100,16 +100,22 @@ program define heatmap_projection /* %< */
     if "`exp'" != "" local wgt [`weight'=`exp']
     * Run projection on controls for y, x
 
-        if `"`absorb'"'!="" local absorb "absorb(`absorb')"
-        foreach var in `1' `2' {
+        if `"`absorb'"'!="" {
+             local regtype areg
+             local absorb ", absorb(`absorb')"
+        }
+        else {
+             local regtype _regress
+        }
+        forval var=1/2 {
                 tempvar residvar
-                _regress ``var'' `controls' `wgt', `absorb'
-                _predict `residvar' if e(sample), residuals
+                `regtype' ``var'' `controls' `wgt' `absorb'
+                predict `residvar' if e(sample), residuals
                 if ("`addmean'"!="noaddmean") {
                         summarize ``var'' `wgt' `if', meanonly
                         replace `residvar'=`residvar'+r(mean)
                 }
-                local `var' `residvar'
+                replace ``var'' = `residvar'
         }
 end
 * %>
@@ -143,21 +149,30 @@ program define heatmap_aggregate /* %< */
         xtile quantile = `2' `wgt', nquantiles(`nquantiles')
     }
     else {
-        gen quantile = `2'
+        encode `2', gen(quantile)
     }
     * Merge and aggregate
     save `quant', replace
     use `orig', clear
     merge n:1 `id' using `quant', nogen
     collapse (`grpfunc') `1', by(`3' quantile) // Summary funcs only
+    keep if !missing(quantile) & !missing(`3')
+    xtset `3' quantile
+    tsfill, full
+    if "`isfactor'" != "" {
+        decode quantile, gen(qfinal)
+        drop quantile
+        rename qfinal quantile
+    }
+
 end
 * %>
 
 program define time_conv /* %< */
     syntax, [tperiod(string)]
 
-    if "`tperiod'" != "NULL" {
-        if "`tperiod'" == "" replace index = dofy(index)
+    if "`tperiod'" != "" {
+        if "`tperiod'" == "year" replace index = dofy(index)
         else if "`tperiod'" == "yearmon" replace index = dofm(index)
         else if "`tperiod'" == "quarter" replace index = dofq(index)
         format index %td
@@ -169,22 +184,23 @@ program define gen_link /* %< */
 
     * This function writes the R script needed to link the Stata and R commands
     * onto disk, if the file does not exist in the current directory
-    capture confirm file heatmap_link.R
-    if _rc != 0 {
-       if "`c(os)'" == "Windows" {
+   if "`c(os)'" == "Windows" {
        !echo library(heatmapEco) > heatmap_link.R
 
        !echo out = read.csv(commandArgs(T)[2], header=F, stringsAsFactors=F, na.strings='') >> heatmap_link.R
        !echo args = lapply(out\$V2, identity) >> heatmap_link.R
        !echo args = setNames(args, lapply(out\$V1, identity))[!is.na(args)] >> heatmap_link.R
+
        !echo p = args[which(names(args) == 'pol.break')] >> heatmap_link.R
        !echo args[which(names(args) == 'pol.break')] = list(eval(parse(text=p))) >> heatmap_link.R
-       !echo p = args[which(names(args) == 'custom.f')] >> heatmap_link.R
-       !echo args[which(names(args) == 'custom.f')] = list(as.numeric(eval(parse(text=p)))) >> heatmap_link.R
+       !echo for (Arg in c('custom.f', 'split.x', 'split.y')) { >> heatmap_link.R
+       !echo       p = args[which(names(args) == Arg)] >> heatmap_link.R
+       !echo       args[which(names(args) == Arg)] = list(as.numeric(eval(parse(text=p)))) >> heatmap_link.R
+       !echo } >> heatmap_link.R
 
-       !echo if (!is.null(args\$t.per)) ( >> heatmap_link.R
+       !echo if (!is.null(args\$t.per)) { >> heatmap_link.R
        !echo       if (args\$t.per == 'NULL') args\$t.per = NULL >> heatmap_link.R
-       !echo ) >> heatmap_link.R
+       !echo } >> heatmap_link.R
 
        !echo print('Evaluation of function arguments:') >> heatmap_link.R
        !echo print(args) >> heatmap_link.R
@@ -192,39 +208,41 @@ program define gen_link /* %< */
 
        !echo Sys.sleep(0.6) >> heatmap_link.R
        !echo b = do.call('heatmapEco', args) >> heatmap_link.R
-       }
+   }
        * Unix echo calls can be safely put in single quotes, but now
        * the single quotes in Windows ver. must be double quotes
-       else {
+   else {
        !echo '#!/usr/local/bin' > heatmap_link.R
        !echo 'library(heatmapEco)' >> heatmap_link.R
 
        !echo 'out = read.csv(commandArgs(T)[2], header=F, stringsAsFactors=F, na.strings="")' >> heatmap_link.R
        !echo 'args = lapply(out\$V2, identity)' >> heatmap_link.R
        !echo 'args = setNames(args, lapply(out\$V1, identity))[!is.na(args)]' >> heatmap_link.R
+
        !echo 'p = args[which(names(args) == "pol.break")]' >> heatmap_link.R
        !echo 'args[which(names(args) == "pol.break")] = list(eval(parse(text=p)))' >> heatmap_link.R
-       !echo 'p = args[which(names(args) == "custom.f")]' >> heatmap_link.R
-       !echo 'args[which(names(args) == "custom.f")] = list(as.numeric(eval(parse(text=p))))' >> heatmap_link.R
+       !echo 'for (Arg in c("custom.f", "split.x", "split.y")) {' >> heatmap_link.R
+       !echo '      p = args[which(names(args) == Arg)]' >> heatmap_link.R
+       !echo '      args[which(names(args) == Arg)] = list(as.numeric(eval(parse(text=p))))' >> heatmap_link.R
+       !echo '}' >> heatmap_link.R
 
-       !echo 'if (!is.null(args\$t.per)) (' >> heatmap_link.R
+       !echo 'if (!is.null(args\$t.per)) {' >> heatmap_link.R
        !echo '      if (args\$t.per == "NULL") args\$t.per = NULL' >> heatmap_link.R
-       !echo ')' >> heatmap_link.R
+       !echo '}' >> heatmap_link.R
 
        !echo 'print("Evaluation of function arguments:")' >> heatmap_link.R
        !echo 'print(args)' >> heatmap_link.R
 
        !echo 'Sys.sleep(0.6)' >> heatmap_link.R
        !echo 'b = do.call("heatmapEco", args)' >> heatmap_link.R
-       }
-    }
+   }
 
 end
 * %>
 
 program define gen_args /* %< */
     syntax anything(name=output), fname(string asis) save(string asis) [tperiod(string) count ///
-        outliers isfactor splitx(string) splity(string) ztitle(string) ///
+        outliers isfactor xlabel(string) ylabel(string) ztitle(string) ///
         polbreak(string asis) customf(string)]
 
     * This function writes the arguments to the R heatmap call "safely,"
@@ -233,13 +251,14 @@ program define gen_args /* %< */
 
     clear
 
-    if "`tperiod'" != "NULL" local tfmt %d%b%Y
+    if "`tperiod'" != "" local tfmt %d%b%Y
+    if "`tperiod'" == "" local tperiod NULL
     if "`count'" != "" local count TRUE
     if "`outliers'" != "" local out_bool TRUE
     if "`isfactor'" != "" local isfactor TRUE
 
     local argparse fname save tfmt tperiod count out_bool isfactor ///
-        splitx splity ztitle
+        xlabel ylabel ztitle
 
     mata: X = ("xq", "fname", "save", "t.fmt", "t.per", "count", ///
          "outliers", "factor.ax", "split.x", "split.y", "zlab", ///

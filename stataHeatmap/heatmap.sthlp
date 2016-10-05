@@ -18,7 +18,7 @@
 {title:Syntax}
 
 {p 8 15 2}
-{cmd:heatmap} {it:{help varname:z}} {it:{help varname:w}} {it:{help varname:index}} 
+{cmd:heatmap} {it:{help varname:z}} {it:{help varname:y}} {it:{help varname:x}} 
 {if}
 {weight} {cmd:,}
 {cmd:id(}{it:{help varname:varname}}{cmd:)}
@@ -37,25 +37,26 @@ continuous covariate or instrument is divided, if applicable {p_end}
 
 {syntab:Aggregation}
 {synopt:{opt grpf:unc(funcname)}} aggregation function over each bin {p_end}
-{synopt:{opt tsort(string)}} sorting time-varying w on values at one time period {p_end}
-{synopt:{opt tper:iod(string)}} format index values to represent a certain 
+{synopt:{opt tper:iod(string)}} format X axis values to represent a certain 
 time interval {p_end}
-{synopt:{opth control:s(varlist)}} residualize z, w on controls {p_end}
-{synopt:{opth a:bsorb(varname)}} residualize z, w on factor variables {p_end}
+{synopt:{opt tsort(string)}} sorting time-varying {it:y} on values at one time period {p_end}
+{synopt:{opth control:s(varlist)}} residualize {it:z, y} on controls {p_end}
+{synopt:{opth a:bsorb(varname)}} residualize {it:z, y} on factor variables {p_end}
 {synopt:{opth probs(numlist)}} percentiles defining custom quantiles for binning {p_end}
 {synopt:{opt keep:agg}} saves the aggregated data as a CSV for
 further use {p_end}
 
 {syntab:Visualization}
-{synopt:{opt polbreak(strings)}} string list in the same formatting as the X axis
+{synopt:{opt polbr:eak(strings)}} string list in the same formatting as the X axis
 that lists where vertical lines should be added{p_end}
-{synopt:{opt splitx(string)}} declares spacing between X axis ticks {p_end}
-{synopt:{opt splity(string)}} declares spacing between Y axis ticks {p_end}
+{synopt:{opt xlab:el(string)}} declares spacing between X axis ticks {p_end}
+{synopt:{opt ylab:el(string)}} declares spacing between Y axis ticks {p_end}
 {synopt:{opth customf(numlist)}} percentiles defining colour gradient composition
 for gradient construction {p_end}
 {synopt:{opt count}} use alternative palette for count data {p_end}
 {synopt:{opt out:liers}} expands colour palette to emphasize outliers {p_end}
-{synopt:{opt isf:actor}} interprets w as a factor for visualization {p_end}
+{synopt:{opt isf:actor}} interprets {it:y} as a factor variable for
+visualization {p_end}
 {synopt:{opt zti:tle(string)}} label for the fill variable to be placed
 above the legend {p_end}
 
@@ -74,7 +75,7 @@ heatmap output according to function options.
 
 {pstd} A heatmap is a two-dimensional data visualization, plotted in matrix form, 
 using colour to represent magnitude. An aggregated dependent variable {it:z} 
-is plotted over axes {it:w, index}, which are factor variables or 
+is plotted over axes {it:y, x}, which are factor variables or 
 discretizations of continuous variables. It is an effective way to plot
 high-dimensional data and compare levels of a variable between groups.
 
@@ -85,7 +86,7 @@ declared in Stata, with the exception of complex aggregation functions.
 
 {pstd} Specifically, the work pipeline involves Stata exporting an aggregated 
 CSV, R loading it and associated arguments, then plotting the file using 
-{bf:heatmapEco} See {it:{help heatmap##installation:installation}} for details.
+{bf:heatmapEco}. See {it:{help heatmap##installation:installation}} for details.
 
 
 {marker installation}{...}
@@ -114,8 +115,8 @@ will not execute successfully without adding directories to PATH.
 directory {it:does} change with each updated version of R.
 
 {pstd} Install the R packages by calling heatmapSetup.R from the command line,
-with one argument: the destination directory for {bf:heatmapEco}'s source file,
-ending in ".tar.gz".
+with one argument: the full path to {bf:heatmapEco}'s source file, which ends
+in ".tar.gz".
 To test the installation works, try running the example given in this manual.
 
 
@@ -128,7 +129,7 @@ To test the installation works, try running the example given in this manual.
 {opth id(varname)} specifies the cross-sectional identifier in the data,
 which is either unique or is unique joint with a time variable. While this
 always needs to be declared, it is a superfluous option when aggregation
-is not involved and should be the same variable as {it: w, index}.
+is not involved and should be the same variable as {it: y} or {it: x}.
 
 {phang}
 {opt save(filename)} declares the heatmap file name. Specify extensions
@@ -150,35 +151,34 @@ functions allowed by {help collapse:collapse} are available, which is less than
 what is possible with the R package. Default function is {bf:mean}.
 
 {phang}
+{opt tper:iod(string)} indicates the time interval represented by a X axis
+time bin. Can be one of {it:year, quarter,} a year-month pair {it:yearmon}, where where the third shows year and month. The default is to turn off this option
+and interpret values on the X axis as arbitrary numeric values.
+
+{phang}
 {opt tsort(string)} sorts a continuous covariate by its values at {it:one} 
-time or discretized index bin. It illustrates research designs where
+binned value on the X-axis. It illustrates research designs where
 the researcher has a time-varying independent variable and wishes to
 arrange the heatmap in the variable's values at a certain point in time.
 Use this option with caution: the heatmap is misleading if selection
 effects exist prior to the time period.
 
 {phang}
-{opt tper:iod(string)} indicates the time interval represented by a X axis
-time bin. Can be one of {it:year, quarter,} a year-month pair {it:yearmon}
-or arbitrary numeric values {it: NULL.} where the third 
-shows year and month and the fourth a numeric value. Default for 
-{bf:heatmapEco} is {it:year}, i.e. whole number valued.
-
-{phang}
 {opth control:s(varlist)} lists which variables are used to residualize
-the plotted {it:z, w} variables, in the Frisch-Waugh-Lovell manner. This
+the plotted {it:z, y} variables, in the Frisch-Waugh-Lovell manner. This
 procedure is nearly identical as that in {bf:binscatter}, by Michael Steppner. 
 
 {phang}
 {opth a:bsorb(varname)} lists which factor variables are used to residualize
-the plotted {it:z, w} variables, using the within transformation supported
-by {help areg:areg}.  This procedure is nearly identical as that in
-{bf:binscatter}, by Michael Steppner. 
+the plotted {it:z, y} variables, using the within transformation supported
+by {help areg:areg}. Currently, factor variables are not supported as
+arguments. This procedure is nearly identical as that in {bf:binscatter},
+by Michael Steppner. 
 
 {phang}
 {opth probs(numlist)} inputs a list of percentiles used to generate
 the quantiles for a continuous covariate. Use as you would the
-{help:_pctile} function in base Stata, except enter numbers from 0 to 1
+{help pctile:_pctile} function in base Stata, except enter numbers from 0 to 1
 instead of percentages.
 
 {phang}
@@ -192,20 +192,20 @@ without rerunning any of the aggregation.
 {dlgtab:Visualization}
 
 {phang}
-{opt polbreak(strings)} parses a list of strings that will indicate where
+{opt polbr:eak(strings)} parses a list of strings that will indicate where
 dotted vertical lines are drawn, signifying policy breaks. Ensure they are
 in the same format as what was indicated in {bf:tperiod}, i.e. if {it:yearmon},
 write dates in the form {it:Mar 2016, 2016-03-01} and so on.
 
 
 {phang}
-{opt splitx(string)} places a number of equally spaced ticks onto
-the X axis, i.e. calling splitx(4) will yield 5 ticks. Default is 6 equal
+{opt xlab:el(string)} places a number of equally spaced ticks onto
+the X axis, i.e. calling xlabel(4) will yield 5 ticks. Default is 6 equal
 ticks, or a tick every few periods if the axis is declared as a time axis.
 
 
 {phang}
-{opt splity(string)} places a number of equally spaced ticks onto
+{opt ylab:el(string)} places a number of equally spaced ticks onto
 the Y axis. Default is 4 equal ticks. This option is ignored if
 {bf:isfactor} is on.
 
@@ -225,7 +225,7 @@ values above or below the 1.5 IQR heuristic are significantly darker than other
 cells.
 
 {phang}
-{opt isf:actor} interprets {it: w} as a factor for aggregation and
+{opt isf:actor} interprets {it: y} as a factor variable for aggregation and
 options. Labels for these factors cannot be hidden, and they can be sorted
 according to another variable's values (TODO).
 
@@ -248,7 +248,17 @@ words.
 > save(test.pdf)
 {res}
 
-ANOTHER EXAMPLE where measles data loaded into Stata?
+The following example uses a cleaned dataset from Project Tycho, which
+can be downloaded from the Github project page for heatmapEco.
+
+{com}. use MEASLES_Incidence_long, clear // Project Tycho data in slides
+{com}. * Getting rid of state-years with only NAs
+{com}. bys year variable: egen nonmiss = count(value)
+{com}. drop if nonmiss==0
+{com}. heatmap value variable year, id(variable) isfactor count grpfunc(sum) ///
+> tper(year) polbr(Jan 1963) out xlab(10) zti("Measles Incidence (p100,000)") ///
+> save(measlesRep.pdf)
+{res}
 
 {marker author}{...}
 {title:Author}
