@@ -179,13 +179,14 @@ compilation <- function(data, y, Ident, z, index, t.sort=NA, N, not.q=F,
 #' @param split If set, determines the number of gaps between each X-axis
 #' label. Default spacings exist for each time type specified by
 #' \code{\link{timeConv}}.
+#' @param xtitle Label for the variable corresponding to the X-axis.
 #' @param period Same as argument \code{period} from \code{\link{timeConv}}.
 #' @param pol.break Vector of character/integers expressing time in the same
 #' format specified by \code{\link{timeConv}}.
 #' @return List of ggplot2 formulae to be parsed by \code{\link{heatmapBuild}}.
 #' @importFrom zoo as.yearmon as.yearqtr
 #' @keywords internal
-setupX <- function (t.col, split, period, pol.break) {
+setupX <- function (t.col, split, xtitle="Time", period, time.axis, pol.break) {
 
     if (any(is.na(t.col))) {
         stop("Formatting failed in X: cannot accept NA values!")
@@ -213,10 +214,11 @@ setupX <- function (t.col, split, period, pol.break) {
     t.lab <- as.character(div(t.break))
 
     # Converting human-readable time breaks into numeric x axis
-    pol.intercept <- timeConv(period)(
+    pol.intercept <- time.axis(
                      gsub("^\\s+|\\s+$", "", pol.break)) - 0.5
     list(tick=bquote(scale_x_continuous(breaks=.(t.break), labels=.(t.lab))),
          xl=bquote(coord_cartesian(xlim=c(.(min(t.col) + .1), .(max(t.col))))),
+         xlab=xtitle,
          int=bquote(geom_vline(xintercept=.(pol.intercept), linetype="4132",
                       col="gray40", size=.9)))
 }
@@ -234,10 +236,11 @@ setupX <- function (t.col, split, period, pol.break) {
 #' @param y.col Input column of categorical/quantile values.
 #' @param split If set, determines the number of gaps between each Y-axis
 #' label. The default spacing is to have 5 evenly-spaced labels.
+#' @param ytitle Label for the variable corresponding to the Y-axis.
 #' @param factor.ax If \code{TRUE}, interprets column as a factor.
 #' @return List of ggplot2 formulae to be parsed by \code{\link{heatmapBuild}}.
 #' @keywords internal
-setupY <- function (y.col, split, factor.ax=F) {
+setupY <- function (y.col, split, ytitle="Instrument", factor.ax=F) {
 
     if (any(is.na(y.col))) {
         stop("Formatting failed in Y: cannot accept NA values!")
@@ -254,10 +257,10 @@ setupY <- function (y.col, split, factor.ax=F) {
         y.lab <- as.character(y.break)
         list(tick=
              bquote(scale_y_discrete(breaks=.(y.break), labels=.(y.lab))),
-             ylab="Quantile of instrument")
+             ylab=paste("Quantile of", ytitle))
     }
     else {
-        list(tick=bquote(scale_y_discrete()), ylab="")
+        list(tick=bquote(scale_y_discrete()), ylab=ytitle)
     }
 }
 # %>
@@ -279,15 +282,15 @@ setupY <- function (y.col, split, factor.ax=F) {
 #' @param outliers If set, will add two low-luminosity colours to both ends of
 #' the gradient, intended to help perceive observations exceeding the
 #' 1.5*IQR heuristic.
-#' @param zlab Label for the fill variable to be placed above the legend.
+#' @param ztitle Label for the fill variable to be placed above the legend.
 #' @param count Vector of character/integers expressing time in the same
 #' format specified by \code{\link{timeConv}}.
 #' @param custom Percentiles at which the principal palette colours are placed.
 #' @return List of ggplot2 formulae to be parsed by \code{\link{heatmapBuild}}.
 #' @keywords internal
-setupFill <- function(fill.col, outliers, zlab, count=F, custom) {
+setupFill <- function(fill.col, outliers, ztitle, count=F, custom) {
 
-    zlab <- gsub("\\s", "\n", zlab)
+    ztitle <- gsub("\\s", "\n", ztitle)
 
     # Outlier visualization
     Fn <- ecdf(fill.col)
@@ -326,7 +329,7 @@ setupFill <- function(fill.col, outliers, zlab, count=F, custom) {
                   .25*(1-bottom[["cut"]]), .5*(1-bottom[["cut"]]))
     }
     cval <- c(0, bottom[["cut"]], custom, top[["cut"]], 1)
-    list(zlab=zlab,
+    list(ztitle=ztitle,
          fill=bquote(scale_fill_gradientn(colours=.(cgrad), values=.(cval),
                      na.value="gray77")))
 }
@@ -343,30 +346,41 @@ setupFill <- function(fill.col, outliers, zlab, count=F, custom) {
 #'
 #' @param data The collapsed dataset.
 #' @param xtick Placement of ticks and labels on the X-axis, set with setupX.
+#' @param xlab Pre-processed label for the X-axis, set with setupX.
 #' @param xl X-axis boundaries, set with setupX.
 #' @param int Shaded vertical lines (x-intercepts), set with setupX.
 #' @param ytick Placement of ticks and labels on the Y-axis, set with setupY.
+#' @param ylab Pre-processed label for the Y-axis, set with setupY.
 #' @param factor.ax If \code{TRUE}, interprets variable column as a factor for
 #' aggregation and options.
 #' @param fill Colour gradient derived from palette, set with setupFill.
-#' @param zlab Label of dependent variable for legend, set with setupFill.
+#' @param ztitle Label of dependent variable for legend, set with setupFill.
+#' @param zlab Integer. If set, will show the numeric value of each cell
+#' plotted on the heatmap rounded to the specified number of digits.
+#' @param portrait If \code{TRUE}, outputs heatmap on letter paper format
+#' with the vertical side being the longest (default is landscape)
 #' @param save File to which graph is exported using ggsave.
 #' @import ggplot2
 #' @keywords internal
-heatmapBuild <- function(data, xtick, xl, int, ytick, ylab, factor.ax,
-                          fill, zlab, save)
+heatmapBuild <- function(data, xtick, xlab, xl, int, ytick, ylab, factor.ax,
+                          fill, ztitle, zlab, portrait, save)
 {
     tryCatch(attachNamespace("ggplot2"), error = function(x) eval(x))
     m <- as.formula
     ylbf <- levels(factor(data$quantile))
-    O <- if (factor.ax == T) rev else identity
+    O <- if (factor.ax == T & length(
+             which(grepl('^[0-9]', ylbf) == FALSE)) == 0) rev else identity
+    zlabs <- if (zlab > 0) formatC(data$z, zlab, format="g") else NA
+    axDim <- c(11, 8)  # US letter format
+    if (portrait == T) axDim <- rev(axDim)
 
     ggplot(data, aes(x=index, y=factor(quantile, levels=O(ylbf)), fill=z)) +
-        geom_tile(colour="gray92") + m(fill) + theme_classic() +
-        theme(axis.line=element_blank(), title=element_text(size=12)) +
-        labs(x="", y=ylab, fill=zlab) +
+        geom_tile() + geom_text(aes(label = zlabs)) + m(fill) +
+        theme_classic() + theme(axis.line=element_blank(),
+                                title=element_text(size=12)) +
+        labs(x=xlab, y=ylab, fill=ztitle) +
         m(int) + m(xtick) + m(ytick) + m(xl)
-    if (!missing(save)) ggsave(save, width=11, height=8)
+    if (!missing(save)) ggsave(save, width=axDim[1], height=axDim[2])
 }
 
 # %>
@@ -405,6 +419,21 @@ parseHeatform <- function(relation) {
   crs.args <- unlist(strsplit(all.args[3], "\\s*(,|=)\\s*"))
   list(cross=crs.args, z.t.args=all.args[c(1,5,6)])
 }
+# %>
+# parseHeatform <- function(relation) {
+#   stopifnot(class(relation) == "formula")
+#   all.args <- rownames(attr(terms(relation), "factors"))
+#   y.args <- unlist(strsplit(test[2], "\\(|\\)|\\s*(,)\\s*"))
+#   y_opts_str <- paste(y.args[3:length(y.args)], collapse=",")
+#   y.opts <- eval(parse(text=paste('list(', y_opts_str, ')')))
+#
+#   x.args <- unlist(strsplit(test[2], "\\(|\\)|\\s*(,)\\s*"))
+#   x.opts.str <- paste(x.args[3:length(x.args)], collapse=",")
+#   x.opts <- eval(parse(text=paste('list(', x.opts.str, ')')))
+#
+#   list(yopts=append(list(yvar=y.args[1], ytype=y.args[2]), y.opts),
+#        xopts=append(list(xvar=x.args[1], xtype=x.args[2]), x.opts),
+# }
 # %>
 
 # %<
@@ -455,8 +484,14 @@ parseHeatform <- function(relation) {
 #' @param custom.f Vector of percentages where the palette composing
 #' the colour gradient should be placed. Most useful for data with
 #' many zero values.
-#' @param zlab Label for the fill variable to be placed above the legend.
+#' @param xtitle Label for the variable corresponding to the X-axis.
+#' @param ytitle Label for the variable corresponding to the X-axis.
+#' @param ztitle Label for the fill variable to be placed above the legend.
+#' @param zlab Integer. If set, will show the numeric value of each cell
+#' plotted on the heatmap rounded to the specified number of digits.
 #' @param fname Location of an external, collapsed CSV dataset to be entered into R for plotting.
+#' @param portrait If \code{TRUE}, outputs heatmap on letter paper format
+#' with the vertical side being the longest (default is landscape)
 #' @param save File to which graph is exported using ggsave.
 #' @return Collapsed data.frame with columns "time", "y", "quantile," to be
 #' reused for tweaking purposes.
@@ -474,10 +509,11 @@ parseHeatform <- function(relation) {
 #' heatmapEco(Y ~ CrS(X,id):t, test, N=100,
 #'                     pol.break=c(11,16), outliers=TRUE)
 heatmapEco <- function(relation, data, xq, controls=NULL, absorb=NULL,
-                       N=0, q.probs, grp.func=mean, t.fmt="%Y",
+                       N=10, q.probs, grp.func=mean, t.fmt="%Y",
                        t.per="year", factor.ax=F, pol.break="", outliers,
-                       count=F, split.x, split.y, custom.f,
-                       zlab="Mean Outcomes", fname, save)  {
+                       count=F, split.x, split.y, custom.f, xtitle="Time",
+                       ytitle="Instrument", ztitle="Mean Outcomes", zlab=0,
+                       fname, portrait=F, save)  {
 
     time.axis <- timeConv(t.per, t.fmt)
     if (missing(fname)) {
@@ -499,12 +535,14 @@ heatmapEco <- function(relation, data, xq, controls=NULL, absorb=NULL,
             stop("Compatibility check failed!")
          })
     }
-    x.opt <- setupX(collapsed$index, split.x, t.per, pol.break)
-    y.opt <- setupY(collapsed$quantile, split.y, factor.ax)
-    f.opt <- setupFill(collapsed$z, outliers, zlab, count, custom.f)
-    heatmapBuild(collapsed, x.opt[["tick"]], x.opt[["xl"]], x.opt[["int"]],
+    x.opt <- setupX(collapsed$index, split.x, xtitle, t.per, time.axis, pol.break)
+    y.opt <- setupY(collapsed$quantile, split.y, ytitle, factor.ax)
+    f.opt <- setupFill(collapsed$z, outliers, ztitle, count, custom.f)
+
+    if (missing(save)) save <- "heatmap.pdf"
+    heatmapBuild(collapsed, x.opt[["tick"]], x.opt[["xlab"]], x.opt[["xl"]], x.opt[["int"]],
                  y.opt[["tick"]], y.opt[["ylab"]], factor.ax, f.opt[["fill"]],
-                 f.opt[["zlab"]], save)
+                 f.opt[["ztitle"]], zlab, portrait, save)
     collapsed
 }
 

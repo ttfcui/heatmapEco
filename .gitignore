@@ -1,1 +1,7 @@
 *.log
+.Rproj.user
+RHeatmap/.RData
+RHeatmap/.Rhistory
+docs/data/*
+docs/figures/*
+docs/slides/*

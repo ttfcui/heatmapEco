@@ -1,15 +1,16 @@
-* heatmap v. 0.3, updated 10/04/2016
+* heatmap v. 0.3, updated 10/09/2016
 * CONTACT: Tom Cui (Tom.Cui@chicagobooth.edu)
 
 * TODO: Does this function convert times or not?
 * For now, to work have to convert data into machine-readable time first.
 
 program define heatmap
-    syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], id(varname) ///
-        save(string asis) [Nquantiles(integer 10) tsort(string) TPERiod(string) ///
+    syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], [id(varname) ///
+        save(string asis) Nquantiles(integer 10) tsort(string) TPERiod(string) ///
         CONTROLs(varlist numeric ts fv) Absorb(varname) GRPFunc(string) noAddmean ///
-        probs(numlist) POLBReak(string asis) XLABel(string) YLABel(string) ///
-        customf(numlist) count OUTliers ISFactor ZTItle(string) KEEPagg]
+        probs(numlist) POLBReak(string asis) XLABel(string) XTItle(string) ///
+        YLABel(string) YTItle(string) customf(numlist) count OUTliers ///
+        ZTItle(string) ZLABel(integer 0) PORTRAIT KEEPagg]
 
     version 12.1
 
@@ -33,6 +34,11 @@ program define heatmap
     else {
         local Rscript_call $linkdir/Rscript
     }
+    if "`save'" == "" {
+        di "Warning: no filename declared. Heatmap will be saved as a PDF" ///
+           " in Stata's current working directory."
+        local save "heatmap.pdf"
+    }
     if "`polbreak'" != "" | "`tsort'" != "" {
         if "`tperiod'" == "yearmon" {
             di `"Warning: Because time interval in data recognized as "yearmon","' ///
@@ -46,9 +52,9 @@ program define heatmap
 
     * If aggregation happened earlier, skip directly to heatmap generation
     capture confirm file heatmap_out.csv
+    preserve
     if "`keepagg'" == "" | _rc != 0 {
 
-    preserve
     * Keep FE columns if considering residuals
     * DOESN'T WORK WITH CONTROLS WITH OPERATORS
     * keep `varlist' `exp' `controls' `id' `absorb'
@@ -64,7 +70,7 @@ program define heatmap
     }
     * Regrouping the index variable if continuous
     heatmap_aggregate `yvar' `xvar' `ivar' [`weight' `exp'] `if', id(`id') ///
-        nquantiles(`nquantiles') tsort(`tsort') probs(`probs') grpfunc(`grpfunc') `isfactor'
+        nquantiles(`nquantiles') tsort(`tsort') probs(`probs') grpfunc(`grpfunc')
     * Rename columns, convert time to string
     rename (`yvar' `ivar') (z index)
     time_conv, tperiod(`tperiod')
@@ -81,8 +87,9 @@ program define heatmap
     if "`keepagg'" == "" | _rc != 0 export delimited `fname', replace
 
     gen_args `outdir'heatmap_args, fname(`fname') save(`save') tperiod(`tperiod') ///
-        `count' `outliers' `isfactor' xlabel(`xlabel') ylabel(`ylabel') ztitle(`ztitle') ///
-        polbreak(`polbreak') customf(`customf')
+        id(`id') `count' `outliers' xlabel(`xlabel') xtitle(`xtitle') ///
+        ylabel(`ylabel') ytitle(`ytitle') ztitle(`ztitle') zlabel(`zlabel') ///
+        portrait(`portrait') polbreak(`polbreak') customf(`customf')
     capture confirm file heatmap_link.R
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
@@ -124,8 +131,8 @@ end
 * %>
 
 program define heatmap_aggregate /* %< */
-    syntax varlist(ts max=3) [if] [pweight fweight aweight iweight/], id(varname) ///
-        nquantiles(integer) [tsort(string) probs(numlist) GRPFunc(string) ISFactor]
+    syntax varlist(ts max=3) [if] [pweight fweight aweight iweight/], nquantiles(integer) ///
+        [id(varname) tsort(string) probs(numlist) GRPFunc(string)]
 
     local tsort = real("`tsort'") // Conversion to avoid need for default arg
     if "`exp'" != "" local wgt [`weight'=`exp']
@@ -137,23 +144,34 @@ program define heatmap_aggregate /* %< */
     * Also allows sorting for time-varying variables
     capture confirm tsort
     if _rc == 0 keep if `3' == `tsort'
-    duplicates drop `id', force
-    * Build the instrument quantiles, or retain as groups.
-    capture confirm probs
-    if _rc == 0 {
-        foreach num of local probs {
-            local pscale = 100*`num'
-            local probs_scale `probs_scale' `pscale'
+    if "`id'" == "" {
+        capture confirm numeric variable `2'
+        if !_rc {
+            gen quantile = `2'
         }
-        _pctile `2' `wgt', p(`probs_scale')
-        xtile quantile = `2', cutpoints(r(r#))
-    }
-    else if "`isfactor'" == ""{
-        xtile quantile = `2' `wgt', nquantiles(`nquantiles')
+        else {
+        encode `2', gen(quantile)
+        }
+        local id `2'
+        duplicates drop `id', force
     }
     else {
-        encode `2', gen(quantile)
+        duplicates drop `id', force
+        * Build the instrument quantiles, or retain as groups.
+        capture confirm probs
+        if _rc == 0 {
+            foreach num of local probs {
+                local pscale = 100*`num'
+                local probs_scale `probs_scale' `pscale'
+            }
+            _pctile `2' `wgt', p(`probs_scale')
+            xtile quantile = `2', cutpoints(r(r#))
+        }
+        else {
+            xtile quantile = `2' `wgt', nquantiles(`nquantiles')
+        }
     }
+
     * Merge and aggregate
     save `quant', replace
     use `orig', clear
@@ -162,7 +180,7 @@ program define heatmap_aggregate /* %< */
     keep if !missing(quantile) & !missing(`3')
     xtset `3' quantile
     tsfill, full
-    if "`isfactor'" != "" {
+    if "`id'" == "" {
         decode quantile, gen(qfinal)
         drop quantile
         rename qfinal quantile
@@ -196,7 +214,7 @@ program define gen_link /* %< */
 
        !echo p = args[which(names(args) == 'pol.break')] >> heatmap_link.R
        !echo args[which(names(args) == 'pol.break')] = list(eval(parse(text=p))) >> heatmap_link.R
-       !echo for (Arg in c('custom.f', 'split.x', 'split.y')) { >> heatmap_link.R
+       !echo for (Arg in c('custom.f', 'split.x', 'split.y', 'zlab')) { >> heatmap_link.R
        !echo       p = args[which(names(args) == Arg)] >> heatmap_link.R
        !echo       args[which(names(args) == Arg)] = list(as.numeric(eval(parse(text=p)))) >> heatmap_link.R
        !echo } >> heatmap_link.R
@@ -224,7 +242,7 @@ program define gen_link /* %< */
 
        !echo 'p = args[which(names(args) == "pol.break")]' >> heatmap_link.R
        !echo 'args[which(names(args) == "pol.break")] = list(eval(parse(text=p)))' >> heatmap_link.R
-       !echo 'for (Arg in c("custom.f", "split.x", "split.y")) {' >> heatmap_link.R
+       !echo 'for (Arg in c("custom.f", "split.x", "split.y", "zlab")) {' >> heatmap_link.R
        !echo '      p = args[which(names(args) == Arg)]' >> heatmap_link.R
        !echo '      args[which(names(args) == Arg)] = list(as.numeric(eval(parse(text=p))))' >> heatmap_link.R
        !echo '}' >> heatmap_link.R
@@ -245,8 +263,8 @@ end
 
 program define gen_args /* %< */
     syntax anything(name=output), fname(string asis) save(string asis) [tperiod(string) count ///
-        outliers isfactor xlabel(string) ylabel(string) ztitle(string) ///
-        polbreak(string asis) customf(string)]
+        id(string) outliers xlabel(string) xtitle(string) ylabel(string) ytitle(string) ///
+        ztitle(string) zlabel(string) portrait(string) polbreak(string asis) customf(string)]
 
     * This function writes the arguments to the R heatmap call "safely,"
     * i.e. within Stata. R link script then reads the R script needed to link the Stata and R commands
@@ -258,13 +276,15 @@ program define gen_args /* %< */
     if "`tperiod'" == "" local tperiod NULL
     if "`count'" != "" local count TRUE
     if "`outliers'" != "" local out_bool TRUE
-    if "`isfactor'" != "" local isfactor TRUE
+    if "`id'" == "" local isfactor TRUE
+    if "`portrait'" != "" local portrait TRUE
 
     local argparse fname save tfmt tperiod count out_bool isfactor ///
-        xlabel ylabel ztitle
+        xlabel xtitle ylabel ytitle ztitle zlabel portrait
 
     mata: X = ("xq", "fname", "save", "t.fmt", "t.per", "count", ///
-         "outliers", "factor.ax", "split.x", "split.y", "zlab", ///
+         "outliers", "factor.ax", "split.x", "xtitle", "split.y", "ytitle", ///
+         "ztitle", "zlab", "portrait", ///
         "pol.break", "custom.f")' // Last row are vector-valued args
     getmata argnames=X, force
     gen argv = ""
@@ -283,7 +303,7 @@ program define gen_args /* %< */
     if "`customf'" != "" {
     replace argv = "c(" + subinstr("`customf'", " ", ",",.) + ")" in -1
     }
-    display "Verify policy markers correct: " argv[12] // currently -2 == 12
+    display "Verify policy markers correct: " argv[16] // currently -2 == 16
     assert `i' + 2 == _N
 
     export delimited using "`output'", novar replace 

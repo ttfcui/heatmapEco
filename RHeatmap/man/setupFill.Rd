@@ -4,7 +4,7 @@
 \alias{setupFill}
 \title{Setting up fill aesthetic of heatmap}
 \usage{
-setupFill(fill.col, outliers, zlab, count = F, custom)
+setupFill(fill.col, outliers, ztitle, count = F, custom)
 }
 \arguments{
 \item{fill.col}{Input column of time values.}
@@ -13,7 +13,7 @@ setupFill(fill.col, outliers, zlab, count = F, custom)
 the gradient, intended to help perceive observations exceeding the
 1.5*IQR heuristic.}
 
-\item{zlab}{Label for the fill variable to be placed above the legend.}
+\item{ztitle}{Label for the fill variable to be placed above the legend.}
 
 \item{count}{Vector of character/integers expressing time in the same
 format specified by \code{\link{timeConv}}.}

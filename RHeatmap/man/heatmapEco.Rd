@@ -4,10 +4,11 @@
 \alias{heatmapEco}
 \title{Master heatmap function.}
 \usage{
-heatmapEco(relation, data, xq, controls = NULL, absorb = NULL, N = 0,
+heatmapEco(relation, data, xq, controls = NULL, absorb = NULL, N = 10,
   q.probs, grp.func = mean, t.fmt = "\%Y", t.per = "year",
   factor.ax = F, pol.break = "", outliers, count = F, split.x, split.y,
-  custom.f, zlab = "Mean Outcomes", fname, save)
+  custom.f, xtitle = "Time", ytitle = "Instrument",
+  ztitle = "Mean Outcomes", zlab = 0, fname, portrait = F, save)
 }
 \arguments{
 \item{relation}{Parsed formula. See \code{\link{parseHeatform}} for details.}
@@ -60,9 +61,19 @@ See \code{\link{setupFill}} for more details.}
 the colour gradient should be placed. Most useful for data with
 many zero values.}
 
-\item{zlab}{Label for the fill variable to be placed above the legend.}
+\item{xtitle}{Label for the variable corresponding to the X-axis.}
+
+\item{ytitle}{Label for the variable corresponding to the X-axis.}
+
+\item{ztitle}{Label for the fill variable to be placed above the legend.}
+
+\item{zlab}{Integer. If set, will show the numeric value of each cell
+plotted on the heatmap rounded to the specified number of digits.}
 
 \item{fname}{Location of an external, collapsed CSV dataset to be entered into R for plotting.}
+
+\item{portrait}{If \code{TRUE}, outputs heatmap on letter paper format
+with the vertical side being the longest (default is landscape)}
 
 \item{save}{File to which graph is exported using ggsave.}
 }

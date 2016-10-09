@@ -4,12 +4,15 @@
 \alias{heatmapBuild}
 \title{Construct and export heatmap}
 \usage{
-heatmapBuild(data, xtick, xl, int, ytick, ylab, factor.ax, fill, zlab, save)
+heatmapBuild(data, xtick, xlab, xl, int, ytick, ylab, factor.ax, fill, ztitle,
+  zlab, portrait, save)
 }
 \arguments{
 \item{data}{The collapsed dataset.}
 
 \item{xtick}{Placement of ticks and labels on the X-axis, set with setupX.}
+
+\item{xlab}{Pre-processed label for the X-axis, set with setupX.}
 
 \item{xl}{X-axis boundaries, set with setupX.}
 
@@ -17,12 +20,20 @@ heatmapBuild(data, xtick, xl, int, ytick, ylab, factor.ax, fill, zlab, save)
 
 \item{ytick}{Placement of ticks and labels on the Y-axis, set with setupY.}
 
+\item{ylab}{Pre-processed label for the Y-axis, set with setupY.}
+
 \item{factor.ax}{If \code{TRUE}, interprets variable column as a factor for
 aggregation and options.}
 
 \item{fill}{Colour gradient derived from palette, set with setupFill.}
 
-\item{zlab}{Label of dependent variable for legend, set with setupFill.}
+\item{ztitle}{Label of dependent variable for legend, set with setupFill.}
+
+\item{zlab}{Integer. If set, will show the numeric value of each cell
+plotted on the heatmap rounded to the specified number of digits.}
+
+\item{portrait}{If \code{TRUE}, outputs heatmap on letter paper format
+with the vertical side being the longest (default is landscape)}
 
 \item{save}{File to which graph is exported using ggsave.}
 }

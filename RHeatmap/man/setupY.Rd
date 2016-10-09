@@ -4,13 +4,15 @@
 \alias{setupY}
 \title{Setting up Y axis of heatmap}
 \usage{
-setupY(y.col, split, factor.ax = F)
+setupY(y.col, split, ytitle = "Instrument", factor.ax = F)
 }
 \arguments{
 \item{y.col}{Input column of categorical/quantile values.}
 
 \item{split}{If set, determines the number of gaps between each Y-axis
 label. The default spacing is to have 5 evenly-spaced labels.}
+
+\item{ytitle}{Label for the variable corresponding to the Y-axis.}
 
 \item{factor.ax}{If \code{TRUE}, interprets column as a factor.}
 }

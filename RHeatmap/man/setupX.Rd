@@ -4,7 +4,7 @@
 \alias{setupX}
 \title{Setting up X axis of heatmap}
 \usage{
-setupX(t.col, split, period, pol.break)
+setupX(t.col, split, xtitle = "Time", period, time.axis, pol.break)
 }
 \arguments{
 \item{t.col}{Input column of time values.}
@@ -12,6 +12,8 @@ setupX(t.col, split, period, pol.break)
 \item{split}{If set, determines the number of gaps between each X-axis
 label. Default spacings exist for each time type specified by
 \code{\link{timeConv}}.}
+
+\item{xtitle}{Label for the variable corresponding to the X-axis.}
 
 \item{period}{Same as argument \code{period} from \code{\link{timeConv}}.}
 
