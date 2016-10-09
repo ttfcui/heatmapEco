@@ -360,13 +360,17 @@ heatmapBuild <- function(data, xtick, xl, int, ytick, ylab, factor.ax,
     m <- as.formula
     ylbf <- levels(factor(data$quantile))
     O <- if (factor.ax == T) rev else identity
+    axDim <- c(11, 8)
+    if (length(unique(data$quantile)) > length(unique(data$index))) {
+      axDim <- rev(axDim)
+    }
 
     ggplot(data, aes(x=index, y=factor(quantile, levels=O(ylbf)), fill=z)) +
         geom_tile(colour="gray92") + m(fill) + theme_classic() +
         theme(axis.line=element_blank(), title=element_text(size=12)) +
         labs(x="", y=ylab, fill=zlab) +
         m(int) + m(xtick) + m(ytick) + m(xl)
-    if (!missing(save)) ggsave(save, width=11, height=8)
+    if (!missing(save)) ggsave(save, width=axDim[1], height=axDim[2])
 }
 
 # %>
@@ -474,7 +478,7 @@ parseHeatform <- function(relation) {
 #' heatmapEco(Y ~ CrS(X,id):t, test, N=100,
 #'                     pol.break=c(11,16), outliers=TRUE)
 heatmapEco <- function(relation, data, xq, controls=NULL, absorb=NULL,
-                       N=0, q.probs, grp.func=mean, t.fmt="%Y",
+                       N=10, q.probs, grp.func=mean, t.fmt="%Y",
                        t.per="year", factor.ax=F, pol.break="", outliers,
                        count=F, split.x, split.y, custom.f,
                        zlab="Mean Outcomes", fname, save)  {
@@ -502,6 +506,8 @@ heatmapEco <- function(relation, data, xq, controls=NULL, absorb=NULL,
     x.opt <- setupX(collapsed$index, split.x, t.per, pol.break)
     y.opt <- setupY(collapsed$quantile, split.y, factor.ax)
     f.opt <- setupFill(collapsed$z, outliers, zlab, count, custom.f)
+
+    if (missing(save)) save <- "heatmap.pdf"
     heatmapBuild(collapsed, x.opt[["tick"]], x.opt[["xl"]], x.opt[["int"]],
                  y.opt[["tick"]], y.opt[["ylab"]], factor.ax, f.opt[["fill"]],
                  f.opt[["zlab"]], save)

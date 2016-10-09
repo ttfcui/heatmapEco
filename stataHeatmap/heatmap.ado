@@ -1,15 +1,15 @@
-* heatmap v. 0.3, updated 10/04/2016
+* heatmap v. 0.3, updated 10/09/2016
 * CONTACT: Tom Cui (Tom.Cui@chicagobooth.edu)
 
 * TODO: Does this function convert times or not?
 * For now, to work have to convert data into machine-readable time first.
 
 program define heatmap
-    syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], id(varname) ///
-        save(string asis) [Nquantiles(integer 10) tsort(string) TPERiod(string) ///
+    syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], [id(varname) ///
+        save(string asis) Nquantiles(integer 10) tsort(string) TPERiod(string) ///
         CONTROLs(varlist numeric ts fv) Absorb(varname) GRPFunc(string) noAddmean ///
         probs(numlist) POLBReak(string asis) XLABel(string) YLABel(string) ///
-        customf(numlist) count OUTliers ISFactor ZTItle(string) KEEPagg]
+        customf(numlist) count OUTliers ZTItle(string) KEEPagg]
 
     version 12.1
 
@@ -32,6 +32,11 @@ program define heatmap
     }
     else {
         local Rscript_call $linkdir/Rscript
+    }
+    if "`save'" == "" {
+        di "Warning: no filename declared. Heatmap will be saved as a PDF" ///
+           " in Stata's current working directory."
+        local save "heatmap.pdf"
     }
     if "`polbreak'" != "" | "`tsort'" != "" {
         if "`tperiod'" == "yearmon" {
@@ -64,7 +69,7 @@ program define heatmap
     }
     * Regrouping the index variable if continuous
     heatmap_aggregate `yvar' `xvar' `ivar' [`weight' `exp'] `if', id(`id') ///
-        nquantiles(`nquantiles') tsort(`tsort') probs(`probs') grpfunc(`grpfunc') `isfactor'
+        nquantiles(`nquantiles') tsort(`tsort') probs(`probs') grpfunc(`grpfunc')
     * Rename columns, convert time to string
     rename (`yvar' `ivar') (z index)
     time_conv, tperiod(`tperiod')
@@ -81,7 +86,7 @@ program define heatmap
     if "`keepagg'" == "" | _rc != 0 export delimited `fname', replace
 
     gen_args `outdir'heatmap_args, fname(`fname') save(`save') tperiod(`tperiod') ///
-        `count' `outliers' `isfactor' xlabel(`xlabel') ylabel(`ylabel') ztitle(`ztitle') ///
+        id(`id') `count' `outliers' xlabel(`xlabel') ylabel(`ylabel') ztitle(`ztitle') ///
         polbreak(`polbreak') customf(`customf')
     capture confirm file heatmap_link.R
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
@@ -124,8 +129,8 @@ end
 * %>
 
 program define heatmap_aggregate /* %< */
-    syntax varlist(ts max=3) [if] [pweight fweight aweight iweight/], id(varname) ///
-        nquantiles(integer) [tsort(string) probs(numlist) GRPFunc(string) ISFactor]
+    syntax varlist(ts max=3) [if] [pweight fweight aweight iweight/], nquantiles(integer) ///
+        [id(varname) tsort(string) probs(numlist) GRPFunc(string)]
 
     local tsort = real("`tsort'") // Conversion to avoid need for default arg
     if "`exp'" != "" local wgt [`weight'=`exp']
@@ -137,23 +142,28 @@ program define heatmap_aggregate /* %< */
     * Also allows sorting for time-varying variables
     capture confirm tsort
     if _rc == 0 keep if `3' == `tsort'
-    duplicates drop `id', force
-    * Build the instrument quantiles, or retain as groups.
-    capture confirm probs
-    if _rc == 0 {
-        foreach num of local probs {
-            local pscale = 100*`num'
-            local probs_scale `probs_scale' `pscale'
-        }
-        _pctile `2' `wgt', p(`probs_scale')
-        xtile quantile = `2', cutpoints(r(r#))
-    }
-    else if "`isfactor'" == ""{
-        xtile quantile = `2' `wgt', nquantiles(`nquantiles')
+    if "`id'" == "" {
+        encode `2', gen(quantile)
+        local id `2'
+        duplicates drop `id', force
     }
     else {
-        encode `2', gen(quantile)
+        duplicates drop `id', force
+        * Build the instrument quantiles, or retain as groups.
+        capture confirm probs
+        if _rc == 0 {
+            foreach num of local probs {
+                local pscale = 100*`num'
+                local probs_scale `probs_scale' `pscale'
+            }
+            _pctile `2' `wgt', p(`probs_scale')
+            xtile quantile = `2', cutpoints(r(r#))
+        }
+        else {
+            xtile quantile = `2' `wgt', nquantiles(`nquantiles')
+        }
     }
+
     * Merge and aggregate
     save `quant', replace
     use `orig', clear
@@ -162,7 +172,7 @@ program define heatmap_aggregate /* %< */
     keep if !missing(quantile) & !missing(`3')
     xtset `3' quantile
     tsfill, full
-    if "`isfactor'" != "" {
+    if "`id'" == "" {
         decode quantile, gen(qfinal)
         drop quantile
         rename qfinal quantile
@@ -245,7 +255,7 @@ end
 
 program define gen_args /* %< */
     syntax anything(name=output), fname(string asis) save(string asis) [tperiod(string) count ///
-        outliers isfactor xlabel(string) ylabel(string) ztitle(string) ///
+        id(varname) outliers xlabel(string) ylabel(string) ztitle(string) ///
         polbreak(string asis) customf(string)]
 
     * This function writes the arguments to the R heatmap call "safely,"
@@ -258,7 +268,7 @@ program define gen_args /* %< */
     if "`tperiod'" == "" local tperiod NULL
     if "`count'" != "" local count TRUE
     if "`outliers'" != "" local out_bool TRUE
-    if "`isfactor'" != "" local isfactor TRUE
+    if "`id'" == "" local isfactor TRUE
 
     local argparse fname save tfmt tperiod count out_bool isfactor ///
         xlabel ylabel ztitle

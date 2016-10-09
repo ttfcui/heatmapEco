@@ -1,7 +1,7 @@
 Package: heatmapEco
 Type: Package
 Title: Heatmap Plotter Suited for Economic Data
-Version: 0.25
+Version: 0.30
 Date: 2016-02-21
 Authors@R: person("Tom", "Cui", email = "Tom.Cui@Chicagobooth.edu", role=c("aut", "cre"))
 Depends:

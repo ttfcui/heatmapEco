@@ -5,6 +5,7 @@
 {viewerjumpto "Description" "heatmap##description"}{...}
 {viewerjumpto "Installation" "heatmap##installation"}{...}
 {viewerjumpto "Options" "heatmap##options"}{...}
+{viewerjumpto "Notes" "heatmap##notes"}{...}
 {viewerjumpto "Examples" "heatmap##examples"}{...}
 {viewerjumpto "Author" "heatmap##author"}{...}
 {viewerjumpto "Acknowledgements" "heatmap##acknowledgements"}{...}
@@ -55,8 +56,6 @@ that lists where vertical lines should be added{p_end}
 for gradient construction {p_end}
 {synopt:{opt count}} use alternative palette for count data {p_end}
 {synopt:{opt out:liers}} expands colour palette to emphasize outliers {p_end}
-{synopt:{opt isf:actor}} interprets {it:y} as a factor variable for
-visualization {p_end}
 {synopt:{opt zti:tle(string)}} label for the fill variable to be placed
 above the legend {p_end}
 
@@ -127,9 +126,12 @@ To test the installation works, try running the example given in this manual.
 
 {phang}
 {opth id(varname)} specifies the cross-sectional identifier in the data,
-which is either unique or is unique joint with a time variable. While this
-always needs to be declared, it is a superfluous option when aggregation
-is not involved and should be the same variable as {it: y} or {it: x}.
+which is either unique or is unique joint with a time variable.
+
+If this command is not declared, heatmap interprets {it: y} as a
+{bf:factor variable} for aggregation and options. Labels for factor variables
+cannot be hidden, and they can be sorted according to another variable's values
+(TODO).
 
 {phang}
 {opt save(filename)} declares the heatmap file name. Specify extensions
@@ -160,6 +162,7 @@ and interpret values on the X axis as arbitrary numeric values.
 binned value on the X-axis. It illustrates research designs where
 the researcher has a time-varying independent variable and wishes to
 arrange the heatmap in the variable's values at a certain point in time.
+
 Use this option with caution: the heatmap is misleading if selection
 effects exist prior to the time period.
 
@@ -183,8 +186,9 @@ instead of percentages.
 
 {phang}
 {opt keep:agg} preserves the outputted CSV with aggregated data, whereas
-the default is to delete the file after the R script is complete. Because
-the aggregation may be time-consuming, if this option continues to be
+the default is to delete the file after the R script is complete.
+
+Because the aggregation may be time-consuming, if this option continues to be
 turned on after the aggregated data are saved, new heatmaps will be created
 without rerunning any of the aggregation.
 
@@ -206,8 +210,8 @@ ticks, or a tick every few periods if the axis is declared as a time axis.
 
 {phang}
 {opt ylab:el(string)} places a number of equally spaced ticks onto
-the Y axis. Default is 4 equal ticks. This option is ignored if
-{bf:isfactor} is on.
+the Y axis. Default is 4 equal ticks. This option is ignored if {it: y} is
+a factor variable.
 
 {phang}
 {opth customf(numlist)} indicates which values on the empirical CDF
@@ -225,15 +229,23 @@ values above or below the 1.5 IQR heuristic are significantly darker than other
 cells.
 
 {phang}
-{opt isf:actor} interprets {it: y} as a factor variable for aggregation and
-options. Labels for these factors cannot be hidden, and they can be sorted
-according to another variable's values (TODO).
-
-{phang}
 {opt zti:tle(string)} changes the label for the fill variable to be placed 
 above the legend. It is advised to keep this label short, at no more than five
 words.
 
+{marker notes}{...}
+{title:Notes}
+
+Currently, {bf:heatmap} will automatically decide if the output is in landscape
+or portrait format by comparing the number of bins on each axis; if the X-axis
+has more bins the heatmap is in landscape format, and vice versa. This may
+be changed in the future.
+
+The syntax for {bf:heatmap} is in alpha version and will change dramatically
+in the future. The end goal is to have a call along the lines of:
+
+{cmd:heatmap} {it:z} {it:y} {it:x}, {cmd:yopts(}factor [,{it:subopts(...)}]) {cmd:xopts}(time[, {it:subopts(...)}]) 
+> [{it: options}] save(heatmap.pdf)
 
 {marker examples}{...}
 {title:Examples}
@@ -244,8 +256,8 @@ words.
 {com}. sysuse xtline1, clear
 {com}. gen month = mofd(day)
 {com}. tostring person, gen(id)
-{com}. heatmap calories id month, id(id) isfactor tperiod(yearmon) ///
-> save(test.pdf)
+{com}. heatmap calories id month // No time labels!
+{com}. heatmap calories id month, tperiod(yearmon) // Corrected
 {res}
 
 The following example uses a cleaned dataset from Project Tycho, which
@@ -255,8 +267,8 @@ can be downloaded from the Github project page for heatmapEco.
 {com}. * Getting rid of state-years with only NAs
 {com}. bys year variable: egen nonmiss = count(value)
 {com}. drop if nonmiss==0
-{com}. heatmap value variable year, id(variable) isfactor count grpfunc(sum) ///
-> tper(year) polbr(Jan 1963) out xlab(10) zti("Measles Incidence (p100,000)") ///
+{com}. heatmap value variable year, count grpfunc(sum) tper(year) polbr(Jan 1963) ///
+> out xlab(10) zti("Measles Incidence (p100,000)") ///
 > save(measlesRep.pdf)
 {res}
 

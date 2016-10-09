@@ -4,7 +4,7 @@
 \alias{heatmapEco}
 \title{Master heatmap function.}
 \usage{
-heatmapEco(relation, data, xq, controls = NULL, absorb = NULL, N = 0,
+heatmapEco(relation, data, xq, controls = NULL, absorb = NULL, N = 10,
   q.probs, grp.func = mean, t.fmt = "\%Y", t.per = "year",
   factor.ax = F, pol.break = "", outliers, count = F, split.x, split.y,
   custom.f, zlab = "Mean Outcomes", fname, save)
