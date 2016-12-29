@@ -1,5 +1,5 @@
 # heatmapEco
-Package to build heatmaps for economic analysis, v. 0.3.
+Package to build heatmaps for economic analysis, v. 0.4.
 
 ## About
 **heatmapEco** is a R package that handles both the creation of heatmaps - colour-coded, high-dimensional data visualizations -
@@ -47,7 +47,12 @@ There is only one ado file for Stata Heatmap, which can be edited directly.
 
 ## Future updates
 
-???
+v 1.0 should include a much more "functional" interface in both the Stata
+and R interfaces, where settings to an axis are called as suboptions to
+a main option for each axis.
+
+Allow easy aggregation of data on just one axis, not both axes, and display
+those aggregated data as sideplots to the heatmap.
 
 ## Contact
 
