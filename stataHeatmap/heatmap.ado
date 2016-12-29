@@ -8,9 +8,14 @@ program define heatmap
     syntax varlist(ts min=3) [if] [pweight fweight aweight iweight], [id(varname) ///
         save(string asis) Nquantiles(integer 10) tsort(string) TPERiod(string) ///
         CONTROLs(varlist numeric ts fv) Absorb(varname) GRPFunc(string) noAddmean ///
+<<<<<<< HEAD
         probs(numlist) POLBReak(string asis) XLABel(string) XTItle(string) ///
         YLABel(string) YTItle(string) customf(numlist) count OUTliers ///
         ZTItle(string) ZLABel(integer 0) PORTRAIT KEEPagg]
+=======
+        probs(numlist) POLBReak(string asis) XLABel(string) YLABel(string) ///
+        customf(numlist) count OUTliers ZTItle(string) KEEPagg]
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 
     version 12.1
 
@@ -87,9 +92,14 @@ program define heatmap
     if "`keepagg'" == "" | _rc != 0 export delimited `fname', replace
 
     gen_args `outdir'heatmap_args, fname(`fname') save(`save') tperiod(`tperiod') ///
+<<<<<<< HEAD
         id(`id') `count' `outliers' xlabel(`xlabel') xtitle(`xtitle') ///
         ylabel(`ylabel') ytitle(`ytitle') ztitle(`ztitle') zlabel(`zlabel') ///
         portrait(`portrait') polbreak(`polbreak') customf(`customf')
+=======
+        id(`id') `count' `outliers' xlabel(`xlabel') ylabel(`ylabel') ztitle(`ztitle') ///
+        polbreak(`polbreak') customf(`customf')
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
     capture confirm file heatmap_link.R
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
@@ -145,6 +155,7 @@ program define heatmap_aggregate /* %< */
     capture confirm tsort
     if _rc == 0 keep if `3' == `tsort'
     if "`id'" == "" {
+<<<<<<< HEAD
         capture confirm numeric variable `2'
         if !_rc {
             gen quantile = `2'
@@ -152,6 +163,9 @@ program define heatmap_aggregate /* %< */
         else {
         encode `2', gen(quantile)
         }
+=======
+        encode `2', gen(quantile)
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
         local id `2'
         duplicates drop `id', force
     }
@@ -263,8 +277,13 @@ end
 
 program define gen_args /* %< */
     syntax anything(name=output), fname(string asis) save(string asis) [tperiod(string) count ///
+<<<<<<< HEAD
         id(string) outliers xlabel(string) xtitle(string) ylabel(string) ytitle(string) ///
         ztitle(string) zlabel(string) portrait(string) polbreak(string asis) customf(string)]
+=======
+        id(varname) outliers xlabel(string) ylabel(string) ztitle(string) ///
+        polbreak(string asis) customf(string)]
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 
     * This function writes the arguments to the R heatmap call "safely,"
     * i.e. within Stata. R link script then reads the R script needed to link the Stata and R commands
@@ -277,7 +296,10 @@ program define gen_args /* %< */
     if "`count'" != "" local count TRUE
     if "`outliers'" != "" local out_bool TRUE
     if "`id'" == "" local isfactor TRUE
+<<<<<<< HEAD
     if "`portrait'" != "" local portrait TRUE
+=======
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 
     local argparse fname save tfmt tperiod count out_bool isfactor ///
         xlabel xtitle ylabel ytitle ztitle zlabel portrait

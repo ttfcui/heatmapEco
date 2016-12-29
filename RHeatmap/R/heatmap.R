@@ -368,11 +368,19 @@ heatmapBuild <- function(data, xtick, xlab, xl, int, ytick, ylab, factor.ax,
     tryCatch(attachNamespace("ggplot2"), error = function(x) eval(x))
     m <- as.formula
     ylbf <- levels(factor(data$quantile))
+<<<<<<< HEAD
     O <- if (factor.ax == T & length(
              which(grepl('^[0-9]', ylbf) == FALSE)) == 0) rev else identity
     zlabs <- if (zlab > 0) formatC(data$z, zlab, format="g") else NA
     axDim <- c(11, 8)  # US letter format
     if (portrait == T) axDim <- rev(axDim)
+=======
+    O <- if (factor.ax == T) rev else identity
+    axDim <- c(11, 8)
+    if (length(unique(data$quantile)) > length(unique(data$index))) {
+      axDim <- rev(axDim)
+    }
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 
     ggplot(data, aes(x=index, y=factor(quantile, levels=O(ylbf)), fill=z)) +
         geom_tile() + geom_text(aes(label = zlabs)) + m(fill) +
@@ -535,12 +543,21 @@ heatmapEco <- function(relation, data, xq, controls=NULL, absorb=NULL,
             stop("Compatibility check failed!")
          })
     }
+<<<<<<< HEAD
     x.opt <- setupX(collapsed$index, split.x, xtitle, t.per, time.axis, pol.break)
     y.opt <- setupY(collapsed$quantile, split.y, ytitle, factor.ax)
     f.opt <- setupFill(collapsed$z, outliers, ztitle, count, custom.f)
 
     if (missing(save)) save <- "heatmap.pdf"
     heatmapBuild(collapsed, x.opt[["tick"]], x.opt[["xlab"]], x.opt[["xl"]], x.opt[["int"]],
+=======
+    x.opt <- setupX(collapsed$index, split.x, t.per, pol.break)
+    y.opt <- setupY(collapsed$quantile, split.y, factor.ax)
+    f.opt <- setupFill(collapsed$z, outliers, zlab, count, custom.f)
+
+    if (missing(save)) save <- "heatmap.pdf"
+    heatmapBuild(collapsed, x.opt[["tick"]], x.opt[["xl"]], x.opt[["int"]],
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
                  y.opt[["tick"]], y.opt[["ylab"]], factor.ax, f.opt[["fill"]],
                  f.opt[["ztitle"]], zlab, portrait, save)
     collapsed

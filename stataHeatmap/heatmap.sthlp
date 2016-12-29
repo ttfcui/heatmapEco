@@ -223,10 +223,16 @@ the Y axis. Default is 4 equal ticks. This option is ignored if {it: y} is
 a factor variable.
 
 {phang}
+<<<<<<< HEAD
 {opt ytit:le(string)} defines the name of the variable for the Y axis.
 Unlike the X axis, because the Y axis can represent a continuous variable
 divided into quantiles, {bf:heatmapEco} notes if this is the case in the
 Y axis title. Default is "Instrument."
+=======
+{opt ylab:el(string)} places a number of equally spaced ticks onto
+the Y axis. Default is 4 equal ticks. This option is ignored if {it: y} is
+a factor variable.
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 
 {phang}
 {opth customf(numlist)} indicates which values on the empirical CDF
@@ -248,6 +254,7 @@ cells.
 above the legend. It is advised to keep this label short, at no more than five
 words.
 
+<<<<<<< HEAD
 {phang}
 {opt zlab:el(#)} If set, a numeric label will appear above each cell plotted
 on the heatmap, rounded to the specified number of significant digits. Default
@@ -258,6 +265,8 @@ is a dummy value "0", which disables showing labels.
 vertical side being the longest. The default is landscape orientation. Regardless
 of this option, the paper size for the heatmap follows US letter format.
 
+=======
+>>>>>>> adb6b1ee56a04939963f529073b3806ac411612b
 {marker notes}{...}
 {title:Notes}
 
