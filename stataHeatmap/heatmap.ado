@@ -1,4 +1,4 @@
-* heatmap v. 0.3, updated 10/09/2016
+* heatmap v. 0.4, updated 12/29/2016
 * CONTACT: Tom Cui (Tom.Cui@chicagobooth.edu)
 
 * TODO: Does this function convert times or not?
@@ -90,7 +90,6 @@ program define heatmap
         id(`id') `count' `outliers' xlabel(`xlabel') xtitle(`xtitle') ///
         ylabel(`ylabel') ytitle(`ytitle') ztitle(`ztitle') zlabel(`zlabel') ///
         portrait(`portrait') polbreak(`polbreak') customf(`customf')
-
     capture confirm file heatmap_link.R
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
@@ -151,7 +150,7 @@ program define heatmap_aggregate /* %< */
             gen quantile = `2'
         }
         else {
-        encode `2', gen(quantile)
+            encode `2', gen(quantile)
         }
         local id `2'
         duplicates drop `id', force
@@ -286,7 +285,7 @@ program define gen_args /* %< */
     mata: X = ("xq", "fname", "save", "t.fmt", "t.per", "count", ///
          "outliers", "factor.ax", "split.x", "xtitle", "split.y", "ytitle", ///
          "ztitle", "zlab", "portrait", ///
-        "pol.break", "custom.f")' // Last row are vector-valued args
+         "pol.break", "custom.f")' // Last row are vector-valued args
     getmata argnames=X, force
     gen argv = ""
 
