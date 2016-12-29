@@ -90,6 +90,7 @@ program define heatmap
         id(`id') `count' `outliers' xlabel(`xlabel') xtitle(`xtitle') ///
         ylabel(`ylabel') ytitle(`ytitle') ztitle(`ztitle') zlabel(`zlabel') ///
         portrait(`portrait') polbreak(`polbreak') customf(`customf')
+
     capture confirm file heatmap_link.R
     if _rc != 0 gen_link // Generate the heatmap_link script if file does not exist
 
