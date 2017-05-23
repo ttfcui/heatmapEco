@@ -369,7 +369,7 @@ heatmapBuild <- function(data, xtick, xlab, xl, int, ytick, ylab, factor.ax,
     m <- as.formula
     ylbf <- levels(factor(data$quantile))
     O <- if (factor.ax == T & length(
-             which(grepl('^[0-9]', ylbf) == FALSE)) == 0) rev else identity
+             which(grepl('^[0-9]', ylbf) == FALSE)) > 0) rev else identity
     zlabs <- if (zlab > 0) formatC(data$z, zlab, format="g") else NA
     axDim <- c(11, 8)  # US letter format
     if (portrait == T) axDim <- rev(axDim)
